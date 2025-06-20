@@ -1,0 +1,7 @@
+Flask
+pdfplumber
+PyPDF2
+python-docx
+scikit-learn
+python-magic
+PyMuPDF
