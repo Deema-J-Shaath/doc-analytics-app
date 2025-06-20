@@ -163,7 +163,7 @@ def search():
     # Sort the results
     reverse_order = sort_order == 'desc'
     if sort_by == 'title':
-        results['results'].sort(key=lambda x: x['title'].lower(), reverse=reverse_order)
+        results['results'].sort(key=lambda x: x.get('title', '').lower(), reverse=reverse_order)
     elif sort_by == 'filename':
         results['results'].sort(key=lambda x: x['filename'].lower(), reverse=reverse_order)
     elif sort_by == 'size':
