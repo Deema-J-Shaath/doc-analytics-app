@@ -17,45 +17,45 @@ classifier = MultiLevelClassifier()
 classifier.load_training_data()
 classifier.train()
 
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app = Flask(__name__, template_folder=\'upload/templates\')
+app.config[\'UPLOAD_FOLDER\'] = UPLOAD_FOLDER
 
 @app.context_processor
 def inject_now():
-    return {'now': datetime.now()}
+    return {\'now\': datetime.now()}
 
 def list_local_files():
     files = []
-    for item in Path(app.config['UPLOAD_FOLDER']).rglob('*'):
+    for item in Path(app.config[\'UPLOAD_FOLDER\']).rglob(\'*\'):
         if item.is_file():
-            files.append(str(item.relative_to(app.config['UPLOAD_FOLDER'])))
+            files.append(str(item.relative_to(app.config[\'UPLOAD_FOLDER\'])))
     return files
 
 def download_file_from_local(filename):
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    with open(filepath, 'rb') as f:
+    filepath = os.path.join(app.config[\'UPLOAD_FOLDER\'], filename)
+    with open(filepath, \'rb\') as f:
         return f.read()
 
 def get_file_metadata_local(filename):
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    filepath = os.path.join(app.config[\'UPLOAD_FOLDER\'], filename)
     stat = os.stat(filepath)
     return {
-        'size': stat.st_size,
-        'created': datetime.fromtimestamp(stat.st_ctime).strftime('%Y-%m-%d %H:%M'),
-        'modified': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M'),
+        \'size\': stat.st_size,
+        \'created\': datetime.fromtimestamp(stat.st_ctime).strftime(\'%Y-%m-%d %H:%M\'),
+        \'modified\': datetime.fromtimestamp(stat.st_mtime).strftime(\'%Y-%m-%d %H:%M\'),
     }
 
 def save_file_locally(file, filename):
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    filepath = os.path.join(app.config[\'UPLOAD_FOLDER\'], filename)
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     file.save(filepath)
 
-def load_logged_documents(sort_by='title', sort_order='asc'):
+def load_logged_documents(sort_by=\'title\', sort_order=\'asc\'):
     documents = []
     if not os.path.exists("classified_log.json"):
         return documents
 
-    with open("classified_log.json", encoding='utf-8') as f:
+    with open("classified_log.json", encoding=\'utf-8\') as f:
         for line in f:
             try:
                 log = json.loads(line.strip())
@@ -75,25 +75,25 @@ def load_logged_documents(sort_by='title', sort_order='asc'):
                 continue
 
     # Sorting logic
-    reverse_order = sort_order == 'desc'
-    if sort_by == 'title':
-        documents.sort(key=lambda x: x['title'].lower(), reverse=reverse_order)
-    elif sort_by == 'filename':
-        documents.sort(key=lambda x: x['filename'].lower(), reverse=reverse_order)
-    elif sort_by == 'size':
-        documents.sort(key=lambda x: x['metadata'].get('size', 0), reverse=reverse_order)
-    elif sort_by == 'created':
-        documents.sort(key=lambda x: x['metadata'].get('created', ''), reverse=reverse_order)
-    elif sort_by == 'classification':
-        documents.sort(key=lambda x: x['classification'].lower(), reverse=reverse_order)
+    reverse_order = sort_order == \'desc\'
+    if sort_by == \'title\':
+        documents.sort(key=lambda x: x[\'title\'].lower(), reverse=reverse_order)
+    elif sort_by == \'filename\':
+        documents.sort(key=lambda x: x[\'filename\'].lower(), reverse=reverse_order)
+    elif sort_by == \'size\':
+        documents.sort(key=lambda x: x[\'metadata\'].get(\'size\', 0), reverse=reverse_order)
+    elif sort_by == \'created\':
+        documents.sort(key=lambda x: x[\'metadata\'].get(\'created\', \'\'), reverse=reverse_order)
+    elif sort_by == \'classification\':
+        documents.sort(key=lambda x: x[\'classification\'].lower(), reverse=reverse_order)
 
     return documents
-@app.route('/download/<filename>')
+@app.route(\'/download/<filename>\')
 def download_file(filename):
     file_content = download_file_from_local(filename)
     return file_content, 200, {
-        'Content-Disposition': f'attachment; filename="{filename}"',
-        'Content-Type': 'application/octet-stream'
+        \'Content-Disposition\': f\'attachment; filename="{filename}"\',
+        \'Content-Type\': \'application/octet-stream\'
     }
 
 @app.route("/", methods=["GET", "POST"])
@@ -101,11 +101,11 @@ def index():
     if request.method == "POST":
         files = request.files.getlist("documents")
         for file in files:
-            if file.filename == '':
+            if file.filename == \'\':
                 continue
                 
             # Save file to local storage
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+            filepath = os.path.join(app.config[\'UPLOAD_FOLDER\'], file.filename)
             save_file_locally(file, file.filename)
 
             # Process and classify the document
@@ -129,7 +129,7 @@ def index():
                         "size": len(file_bytes)
                     }
                 }
-                with open("classified_log.json", "a", encoding='utf-8') as log_file:
+                with open("classified_log.json", "a", encoding=\'utf-8\') as log_file:
                     log_file.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
             except Exception as e:
                 print(f"Error processing file {file.filename}: {e}")
@@ -137,8 +137,8 @@ def index():
         return redirect(url_for("index"))
 
     # Load from classification log
-    sort_by = request.args.get('sort_by', 'title')
-    sort_order = request.args.get('sort_order', 'asc')
+    sort_by = request.args.get(\'sort_by\', \'title\')
+    sort_order = request.args.get(\'sort_order\', \'asc\')
     
     # Load from classification log with sorting
     documents = load_logged_documents(sort_by=sort_by, sort_order=sort_order)
@@ -154,28 +154,28 @@ def search():
         return redirect(url_for("index"))
 
     # Get sorting parameters from request
-    sort_by = request.args.get('sort_by', 'title')
-    sort_order = request.args.get('sort_order', 'asc')
+    sort_by = request.args.get(\'sort_by\', \'title\')
+    sort_order = request.args.get(\'sort_order\', \'asc\')
     
-    results = search_documents(keyword, app.config['UPLOAD_FOLDER'])
-    stats = get_statistics(results['results'])
+    results = search_documents(keyword, app.config[\'UPLOAD_FOLDER\'])
+    stats = get_statistics(results[\'results\'])
     
     # Sort the results
-    reverse_order = sort_order == 'desc'
-    if sort_by == 'title':
-        results['results'].sort(key=lambda x: x['title'].lower(), reverse=reverse_order)
-    elif sort_by == 'filename':
-        results['results'].sort(key=lambda x: x['filename'].lower(), reverse=reverse_order)
-    elif sort_by == 'size':
-        results['results'].sort(key=lambda x: x['metadata'].get('size', 0), reverse=reverse_order)
-    elif sort_by == 'created':
-        results['results'].sort(key=lambda x: x['metadata'].get('created', ''), reverse=reverse_order)
-    elif sort_by == 'classification':
-        results['results'].sort(key=lambda x: x['classification'].lower(), reverse=reverse_order)
+    reverse_order = sort_order == \'desc\'
+    if sort_by == \'title\':
+        results[\'results\'].sort(key=lambda x: x[\'title\'].lower(), reverse=reverse_order)
+    elif sort_by == \'filename\':
+        results[\'results\'].sort(key=lambda x: x[\'filename\'].lower(), reverse=reverse_order)
+    elif sort_by == \'size\':
+        results[\'results\'].sort(key=lambda x: x[\'metadata\'].get(\'size\', 0), reverse=reverse_order)
+    elif sort_by == \'created\':
+        results[\'results\'].sort(key=lambda x: x[\'metadata\'].get(\'created\', \'\'), reverse=reverse_order)
+    elif sort_by == \'classification\':
+        results[\'results\'].sort(key=lambda x: x[\'classification\'].lower(), reverse=reverse_order)
     
     return render_template("index.html", 
-                         documents=results['results'],
-                         search_time=results['search_time'], 
+                         documents=results[\'results\'],
+                         search_time=results[\'search_time\'], 
                          keyword=keyword, 
                          stats=stats,
                          sort_by=sort_by,
@@ -197,10 +197,10 @@ def document_details(filename):
     doc = parse_document(BytesIO(raw))
     metadata = get_file_metadata_local(filename)
     doc.update({
-        'filename': filename,
-        'metadata': metadata,
-        'filetype': os.path.splitext(filename)[1][1:].upper(),
-        'classification': classifier.classify(doc['content'])
+        \'filename\': filename,
+        \'metadata\': metadata,
+        \'filetype\': os.path.splitext(filename)[1][1:].upper(),
+        \'classification\': classifier.classify(doc[\'content\'])
     })
 
     return render_template("details.html", document=doc)
@@ -209,7 +209,7 @@ import os
 
 @app.route("/delete/<filename>", methods=["POST"])
 def delete_document(filename):
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    filepath = os.path.join(app.config[\'UPLOAD_FOLDER\'], filename)
 
     # Remove the file if exists
     if os.path.exists(filepath):
@@ -242,11 +242,11 @@ def delete_document(filename):
     return redirect("/")  # or wherever you want
 @app.route("/update/<filename>", methods=["GET", "POST"])
 def update_document(filename):
-    filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    filepath = os.path.join(app.config[\'UPLOAD_FOLDER\'], filename)
 
     if request.method == "POST":
         new_file = request.files.get("new_file")
-        if not new_file or new_file.filename == '':
+        if not new_file or new_file.filename == \'\':
             return "No file selected", 400
         print(f"Updating file: {filename}, new file: {new_file.filename}")
         try:
@@ -296,7 +296,7 @@ def update_document(filename):
                 })
 
             # Rewrite the log
-            with open("classified_log.json", "w", encoding='utf-8') as log_file:
+            with open("classified_log.json", "w", encoding=\'utf-8\') as log_file:
                 for entry in updated_log:
                     log_file.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
@@ -312,3 +312,5 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=False, host="0.0.0.0", port=port)
+
+
